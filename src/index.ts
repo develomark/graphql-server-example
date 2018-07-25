@@ -1,20 +1,37 @@
-import { GraphQLServer } from 'graphql-yoga'
+const { ApolloServer } = require('apollo-server')
 import { Prisma } from './generated/prisma'
 import { resolvers, fragmentReplacements } from './resolvers'
+import { importSchema } from 'graphql-import'
+
+const typeDefs = importSchema(`${__dirname}/schema.graphql`)
 
 const db = new Prisma({
   fragmentReplacements,
   endpoint: process.env.PRISMA_ENDPOINT,
-  secret: process.env.PRISMA_SECRET,
+  secret: process.env.PRISMA_MANAGEMENT_API_SECRET,
   debug: true,
 })
 
-const server = new GraphQLServer({
-  typeDefs: './src/schema.graphql',
+const server = new ApolloServer({
+  typeDefs,
   resolvers,
-  context: req => ({ ...req, db }),
+  //optional parameter
+
+  context: req => {
+    return { ...req, db }
+  },
+  onHealthCheck: () =>
+    new Promise((resolve, reject) => {
+      //database check or other asynchronous action
+    }),
+  introspection: true,
+  playground: true,
+  debug: true,
 })
 
-server.start(({ port }) =>
-  console.log(`Server is running on http://localhost:${port}`),
-)
+server.listen().then(({ url }) => {
+  console.log(`🚀 Server ready at ${url}`)
+  console.log(
+    `Try your health check at: ${url}.well-known/apollo/server-health`,
+  )
+})
