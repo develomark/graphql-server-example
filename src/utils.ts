@@ -7,7 +7,7 @@ export interface Context {
 }
 
 export function getUserId(context) {
-  const Authorization = context.request.get('Authorization')
+  const Authorization = context.req.headers.authorization
   if (Authorization) {
     const token = Authorization.replace('Bearer ', '')
     const { userId } = jwt.verify(token, process.env.APP_SECRET!) as {
